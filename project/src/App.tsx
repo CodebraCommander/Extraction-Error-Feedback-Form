@@ -1,0 +1,346 @@
+import React, { useState } from 'react';
+import { AlertCircle, Send, Upload, Loader2 } from 'lucide-react';
+
+interface FeedbackForm {
+  description: string;
+  category: 'data-missing' | 'data-incorrect' | 'both' | 'other';
+  appliesTo: {
+    marketRents: boolean;
+    inPlaceRents: boolean;
+    units: boolean;
+    floorplans: boolean;
+    sf: boolean;
+    charges: boolean;
+  };
+  file?: File;
+}
+
+function App() {
+  const [form, setForm] = useState<FeedbackForm>({
+    description: '',
+    category: 'data-missing',
+    appliesTo: {
+      marketRents: false,
+      inPlaceRents: false,
+      units: false,
+      floorplans: false,
+      sf: false,
+      charges: false,
+    }
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setForm(prev => ({ ...prev, file }));
+    }
+  };
+
+  const handleCheckboxChange = (field: keyof FeedbackForm['appliesTo']) => {
+    setForm(prev => ({
+      ...prev,
+      appliesTo: {
+        ...prev.appliesTo,
+        [field]: !prev.appliesTo[field]
+      }
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('description', form.description);
+      formData.append('category', form.category);
+      formData.append('appliesTo', JSON.stringify(form.appliesTo));
+      if (form.file) {
+        formData.append('file', form.file);
+      }
+
+      // Replace with your actual endpoint
+      const response = await fetch('/api/feedback', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to submit feedback');
+      }
+
+      setSuccess(true);
+      setForm({
+        description: '',
+        category: 'data-missing',
+        appliesTo: {
+          marketRents: false,
+          inPlaceRents: false,
+          units: false,
+          floorplans: false,
+          sf: false,
+          charges: false,
+        }
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-2xl mx-auto">
+        <div className="text-center mb-8">
+          <AlertCircle className="w-12 h-12 text-blue-600 mx-auto mb-4" />
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Report Data Extraction Issue
+          </h1>
+          <p className="text-gray-600">
+            Help us improve by reporting any data extraction errors you encounter
+          </p>
+        </div>
+
+        {success ? (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
+            <h2 className="text-xl font-semibold text-green-800 mb-2">
+              Thank you for your feedback!
+            </h2>
+            <p className="text-green-700">
+              We'll review your report and work on resolving the issue.
+            </p>
+            <button
+              onClick={() => setSuccess(false)}
+              className="mt-4 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+            >
+              Submit Another Report
+            </button>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-6 bg-white shadow-lg rounded-xl p-6">
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
+                {error}
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Category
+                </label>
+                <div className="space-y-3">
+                  <div className="flex items-center">
+                    <input
+                      type="radio"
+                      id="data-missing"
+                      name="category"
+                      value="data-missing"
+                      checked={form.category === 'data-missing'}
+                      onChange={(e) => setForm(prev => ({ ...prev, category: e.target.value as FeedbackForm['category'] }))}
+                      className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                    />
+                    <label htmlFor="data-missing" className="ml-3 text-sm text-gray-700">
+                      Data Missing
+                    </label>
+                  </div>
+                  <div className="flex items-center">
+                    <input
+                      type="radio"
+                      id="data-incorrect"
+                      name="category"
+                      value="data-incorrect"
+                      checked={form.category === 'data-incorrect'}
+                      onChange={(e) => setForm(prev => ({ ...prev, category: e.target.value as FeedbackForm['category'] }))}
+                      className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                    />
+                    <label htmlFor="data-incorrect" className="ml-3 text-sm text-gray-700">
+                      Data Captured Incorrectly
+                    </label>
+                  </div>
+                  <div className="flex items-center">
+                    <input
+                      type="radio"
+                      id="both"
+                      name="category"
+                      value="both"
+                      checked={form.category === 'both'}
+                      onChange={(e) => setForm(prev => ({ ...prev, category: e.target.value as FeedbackForm['category'] }))}
+                      className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                    />
+                    <label htmlFor="both" className="ml-3 text-sm text-gray-700">
+                      Both
+                    </label>
+                  </div>
+                  <div className="flex items-center">
+                    <input
+                      type="radio"
+                      id="other"
+                      name="category"
+                      value="other"
+                      checked={form.category === 'other'}
+                      onChange={(e) => setForm(prev => ({ ...prev, category: e.target.value as FeedbackForm['category'] }))}
+                      className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                    />
+                    <label htmlFor="other" className="ml-3 text-sm text-gray-700">
+                      Something Else
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Applies To
+                </label>
+                <div className="space-y-3">
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="marketRents"
+                      checked={form.appliesTo.marketRents}
+                      onChange={() => handleCheckboxChange('marketRents')}
+                      className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <label htmlFor="marketRents" className="ml-3 text-sm text-gray-700">
+                      Market Rents
+                    </label>
+                  </div>
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="inPlaceRents"
+                      checked={form.appliesTo.inPlaceRents}
+                      onChange={() => handleCheckboxChange('inPlaceRents')}
+                      className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <label htmlFor="inPlaceRents" className="ml-3 text-sm text-gray-700">
+                      In-Place Rents
+                    </label>
+                  </div>
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="units"
+                      checked={form.appliesTo.units}
+                      onChange={() => handleCheckboxChange('units')}
+                      className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <label htmlFor="units" className="ml-3 text-sm text-gray-700">
+                      Units
+                    </label>
+                  </div>
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="floorplans"
+                      checked={form.appliesTo.floorplans}
+                      onChange={() => handleCheckboxChange('floorplans')}
+                      className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <label htmlFor="floorplans" className="ml-3 text-sm text-gray-700">
+                      Floorplans
+                    </label>
+                  </div>
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="sf"
+                      checked={form.appliesTo.sf}
+                      onChange={() => handleCheckboxChange('sf')}
+                      className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <label htmlFor="sf" className="ml-3 text-sm text-gray-700">
+                      SF
+                    </label>
+                  </div>
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="charges"
+                      checked={form.appliesTo.charges}
+                      onChange={() => handleCheckboxChange('charges')}
+                      className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <label htmlFor="charges" className="ml-3 text-sm text-gray-700">
+                      Charges
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+                Describe the Issue
+              </label>
+              <textarea
+                id="description"
+                required
+                value={form.description}
+                onChange={(e) => setForm(prev => ({ ...prev, description: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                rows={4}
+                placeholder="What went wrong with the data extraction?"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Upload Source File for Debuggung
+              </label>
+              <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-blue-400 transition-colors">
+                <div className="space-y-1 text-center">
+                  <Upload className="mx-auto h-12 w-12 text-gray-400" />
+                  <div className="flex text-sm text-gray-600">
+                    <label htmlFor="file-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                      <span>Upload a file</span>
+                      <input
+                        id="file-upload"
+                        name="file-upload"
+                        type="file"
+                        className="sr-only"
+                        onChange={handleFileChange}
+                      />
+                    </label>
+                    <p className="pl-1">or drag and drop</p>
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    {form.file ? form.file.name : 'Any file format up to 10MB'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full flex justify-center items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-300 disabled:cursor-not-allowed"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4" />
+                    Submitting...
+                  </>
+                ) : (
+                  <>
+                    <Send className="-ml-1 mr-2 h-4 w-4" />
+                    Submit Feedback
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default App;
