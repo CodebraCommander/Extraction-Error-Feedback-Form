@@ -73,7 +73,7 @@ function App() {
     e.preventDefault();
     setIsSubmitting(true);
     setError(null);
-
+  
     try {
       // Get URL parameters
       const urlParams = new URLSearchParams(window.location.search);
@@ -81,7 +81,7 @@ function App() {
       urlParams.forEach((value, key) => {
         urlParamsObject[key] = value;
       });
-
+  
       // Prepare file data if a file is attached
       let fileData = null;
       if (form.file) {
@@ -94,7 +94,7 @@ function App() {
           content: base64File
         };
       }
-
+  
       // Create the payload
       const payload = {
         formData: {
@@ -107,10 +107,10 @@ function App() {
         submittedAt: new Date().toISOString(),
         userAgent: navigator.userAgent
       };
-
+  
       // PowerAutomate endpoint URL
       const powerAutomateEndpoint = "https://prod-13.westus.logic.azure.com:443/workflows/721509f5a7e4467bac8e771ee033257a/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=X1SGNnstEHWJ3mt3JqmprKBrtiAO3VjM0V9ubV6xpe8";
-
+  
       // Send the data to PowerAutomate
       const response = await fetch(powerAutomateEndpoint, {
         method: 'POST',
@@ -119,14 +119,26 @@ function App() {
         },
         body: JSON.stringify(payload)
       });
-
+  
       if (!response.ok) {
         throw new Error(`Failed to submit feedback: ${response.status} ${response.statusText}`);
       }
-
-      const responseData = await response.json();
-      console.log('Submission successful:', responseData);
-
+  
+      // Check if there's actually content in the response
+      const responseText = await response.text();
+      let responseData;
+      
+      if (responseText && responseText.trim() !== '') {
+        try {
+          responseData = JSON.parse(responseText);
+          console.log('Submission successful:', responseData);
+        } catch (parseError) {
+          console.log('Received non-JSON response but submission was successful. Error:', parseError);
+        }
+      } else {
+        console.log('Received empty response but submission was successful');
+      }
+  
       // Reset form and show success message
       setSuccess(true);
       setForm({
