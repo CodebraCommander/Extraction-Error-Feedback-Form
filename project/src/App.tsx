@@ -186,7 +186,7 @@ function App() {
               onClick={() => setSuccess(false)}
               className="mt-4 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
             >
-              Submit Another Report
+              Submit Another Example
             </button>
           </div>
         ) : (
