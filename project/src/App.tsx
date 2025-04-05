@@ -408,7 +408,7 @@ function App() {
               </label>
               <div 
                 className={`mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-md transition-colors ${
-                  isDragging ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-blue-400'
+                  isDragging ? 'border-blue-500 bg-blue-50' : form.file ? 'border-green-500 bg-green-50' : 'border-gray-300 hover:border-blue-400'
                 }`}
                 onDragEnter={handleDragEnter}
                 onDragOver={handleDragOver}
@@ -416,24 +416,59 @@ function App() {
                 onDrop={handleDrop}
               >
                 <div className="space-y-1 text-center">
-                  <Upload className={`mx-auto h-12 w-12 ${isDragging ? 'text-blue-500' : 'text-gray-400'}`} />
-                  <div className="flex text-sm text-gray-600">
-                    <label htmlFor="file-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
-                      <span>Upload a file</span>
-                      <input
-                        id="file-upload"
-                        name="file-upload"
-                        type="file"
-                        className="sr-only"
-                        ref={fileInputRef}
-                        onChange={handleFileChange}
-                      />
-                    </label>
-                    <p className="pl-1">or drag and drop</p>
-                  </div>
-                  <p className="text-xs text-gray-500">
-                    {form.file ? form.file.name : 'Any file format up to 10MB'}
-                  </p>
+                  {form.file ? (
+                    <>
+                      <div className="relative mx-auto w-12 h-12">
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <svg className="h-10 w-10 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                        <div className="absolute top-0 right-0 -mr-1 -mt-1 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+                          <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      </div>
+                      <p className="text-sm font-medium text-green-600">File attached</p>
+                      <p className="text-sm text-gray-800 truncate max-w-xs">
+                        {form.file.name}
+                      </p>
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          setForm(prev => ({ ...prev, file: undefined }));
+                          if (fileInputRef.current) {
+                            fileInputRef.current.value = '';
+                          }
+                        }}
+                        className="text-xs text-red-600 hover:text-red-800 font-medium"
+                      >
+                        Remove file
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className={`mx-auto h-12 w-12 ${isDragging ? 'text-blue-500' : 'text-gray-400'}`} />
+                      <div className="flex text-sm text-gray-600">
+                        <label htmlFor="file-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                          <span>Upload a file</span>
+                          <input
+                            id="file-upload"
+                            name="file-upload"
+                            type="file"
+                            className="sr-only"
+                            ref={fileInputRef}
+                            onChange={handleFileChange}
+                          />
+                        </label>
+                        <p className="pl-1">or drag and drop</p>
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        Any file format up to 10MB
+                      </p>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
