@@ -15,6 +15,26 @@ interface FeedbackForm {
   file?: File;
 }
 
+// Helper function to convert File object to base64 string
+const convertFileToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => {
+      // The result includes the data URL prefix, so we remove that part
+      if (reader.result && typeof reader.result === 'string') {
+        const base64String = reader.result.split(',')[1];
+        resolve(base64String);
+      } else {
+        resolve('');
+      }
+    };
+    reader.onerror = (error) => {
+      reject(error);
+    };
+  });
+};
+
 function App() {
   const [form, setForm] = useState<FeedbackForm>({
     description: '',
@@ -49,30 +69,65 @@ function App() {
     }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
     setError(null);
 
     try {
-      const formData = new FormData();
-      formData.append('description', form.description);
-      formData.append('category', form.category);
-      formData.append('appliesTo', JSON.stringify(form.appliesTo));
+      // Get URL parameters
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlParamsObject: Record<string, string> = {};
+      urlParams.forEach((value, key) => {
+        urlParamsObject[key] = value;
+      });
+
+      // Prepare file data if a file is attached
+      let fileData = null;
       if (form.file) {
-        formData.append('file', form.file);
+        // Convert file to base64
+        const base64File = await convertFileToBase64(form.file);
+        fileData = {
+          name: form.file.name,
+          type: form.file.type,
+          size: form.file.size,
+          content: base64File
+        };
       }
 
-      // Replace with your actual endpoint
-      const response = await fetch('/api/feedback', {
+      // Create the payload
+      const payload = {
+        formData: {
+          description: form.description,
+          category: form.category,
+          appliesTo: form.appliesTo
+        },
+        fileAttachment: fileData,
+        urlParameters: urlParamsObject,
+        submittedAt: new Date().toISOString(),
+        userAgent: navigator.userAgent
+      };
+
+      // PowerAutomate endpoint URL
+      const powerAutomateEndpoint = "https://prod-13.westus.logic.azure.com:443/workflows/721509f5a7e4467bac8e771ee033257a/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=X1SGNnstEHWJ3mt3JqmprKBrtiAO3VjM0V9ubV6xpe8";
+
+      // Send the data to PowerAutomate
+      const response = await fetch(powerAutomateEndpoint, {
         method: 'POST',
-        body: formData,
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
       });
 
       if (!response.ok) {
-        throw new Error('Failed to submit feedback');
+        throw new Error(`Failed to submit feedback: ${response.status} ${response.statusText}`);
       }
 
+      const responseData = await response.json();
+      console.log('Submission successful:', responseData);
+
+      // Reset form and show success message
       setSuccess(true);
       setForm({
         description: '',
@@ -87,6 +142,7 @@ function App() {
         }
       });
     } catch (err) {
+      console.error('Error submitting form:', err);
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setIsSubmitting(false);
@@ -292,7 +348,7 @@ function App() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Upload Source File for Debuggung
+                Upload Source File for Debugging
               </label>
               <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-blue-400 transition-colors">
                 <div className="space-y-1 text-center">
