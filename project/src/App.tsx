@@ -115,8 +115,15 @@ function App() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setIsSubmitting(true);
     setError(null);
+    
+    // Check if a file is attached
+    if (!form.file) {
+      setError("Please attach a source file for debugging");
+      return;
+    }
+    
+    setIsSubmitting(true);
   
     try {
       // Get URL parameters
@@ -126,18 +133,16 @@ function App() {
         urlParamsObject[key] = value;
       });
   
-      // Prepare file data if a file is attached
+      // Prepare file data
       let fileData = null;
-      if (form.file) {
-        // Convert file to base64
-        const base64File = await convertFileToBase64(form.file);
-        fileData = {
-          name: form.file.name,
-          type: form.file.type,
-          size: form.file.size,
-          content: base64File
-        };
-      }
+      // Convert file to base64
+      const base64File = await convertFileToBase64(form.file);
+      fileData = {
+        name: form.file.name,
+        type: form.file.type,
+        size: form.file.size,
+        content: base64File
+      };
   
       // Create the payload
       const payload = {
@@ -402,9 +407,9 @@ function App() {
               />
             </div>
 
-            <div>
+                          <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Upload Source File for Debugging
+                Upload Source File for Debugging <span className="text-red-600">*</span>
               </label>
               <div 
                 className={`mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-md transition-colors ${
@@ -471,6 +476,10 @@ function App() {
                   )}
                 </div>
               </div>
+            </div>
+
+            <div className="mt-2 text-xs text-gray-500">
+              <span className="text-red-600">*</span> Required field
             </div>
 
             <div>
