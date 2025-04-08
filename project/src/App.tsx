@@ -13,6 +13,7 @@ interface FeedbackForm {
     charges: boolean;
   };
   file?: File;
+  reprocessFile: boolean; // New property for the toggle
 }
 
 // Helper function to convert File object to base64 string
@@ -46,7 +47,8 @@ function App() {
       floorplans: false,
       sf: false,
       charges: false,
-    }
+    },
+    reprocessFile: false // Default to false
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -68,6 +70,13 @@ function App() {
         ...prev.appliesTo,
         [field]: !prev.appliesTo[field]
       }
+    }));
+  };
+
+  const handleToggleReprocess = () => {
+    setForm(prev => ({
+      ...prev,
+      reprocessFile: !prev.reprocessFile
     }));
   };
 
@@ -149,7 +158,8 @@ function App() {
         formData: {
           description: form.description,
           category: form.category,
-          appliesTo: form.appliesTo
+          appliesTo: form.appliesTo,
+          reprocessFile: form.reprocessFile // Include the new field in the payload
         },
         fileAttachment: fileData,
         urlParameters: urlParamsObject,
@@ -200,7 +210,8 @@ function App() {
           floorplans: false,
           sf: false,
           charges: false,
-        }
+        },
+        reprocessFile: false
       });
     } catch (err) {
       console.error('Error submitting form:', err);
@@ -407,7 +418,7 @@ function App() {
               />
             </div>
 
-                          <div>
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Upload Source File for Debugging <span className="text-red-600">*</span>
               </label>
@@ -477,6 +488,30 @@ function App() {
                 </div>
               </div>
             </div>
+
+            {/* Reprocess file toggle - only visible when file is attached */}
+            {form.file && (
+              <div className="flex items-center bg-blue-50 p-4 rounded-md">
+                <div className="flex items-center h-5">
+                  <input
+                    id="reprocessFile"
+                    name="reprocessFile"
+                    type="checkbox"
+                    checked={form.reprocessFile}
+                    onChange={handleToggleReprocess}
+                    className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                </div>
+                <div className="ml-3 text-sm">
+                  <label htmlFor="reprocessFile" className="font-medium text-blue-700">
+                    Submit file to support for re-processing
+                  </label>
+                  <p className="text-blue-600">
+                    Check this if you would like our support team to try re-processing this file
+                  </p>
+                </div>
+              </div>
+            )}
 
             <div className="mt-2 text-xs text-gray-500">
               <span className="text-red-600">*</span> Required field
