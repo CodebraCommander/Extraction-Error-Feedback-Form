@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { AlertCircle, Send, Upload, Loader2 } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { AlertCircle, Send, Upload, Loader2, Building } from 'lucide-react';
 
 interface FeedbackForm {
   description: string;
@@ -13,7 +13,7 @@ interface FeedbackForm {
     charges: boolean;
   };
   file?: File;
-  reprocessFile: boolean; // New property for the toggle
+  reprocessFile: boolean;
 }
 
 // Helper function to convert File object to base64 string
@@ -37,6 +37,7 @@ const convertFileToBase64 = (file: File): Promise<string> => {
 };
 
 function App() {
+  const [dealInfo, setDealInfo] = useState<string | null>(null);
   const [form, setForm] = useState<FeedbackForm>({
     description: '',
     category: 'data-missing',
@@ -48,13 +49,25 @@ function App() {
       sf: false,
       charges: false,
     },
-    reprocessFile: false // Default to false
+    reprocessFile: false
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Extract deal information from URL on component mount
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const dealParam = urlParams.get('deal');
+    
+    if (dealParam) {
+      // URL decode the deal parameter
+      const decodedDeal = decodeURIComponent(dealParam);
+      setDealInfo(decodedDeal);
+    }
+  }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -143,15 +156,25 @@ function App() {
       });
   
       // Prepare file data
-      let fileData = null;
-      // Convert file to base64
-      const base64File = await convertFileToBase64(form.file);
-      fileData = {
-        name: form.file.name,
-        type: form.file.type,
-        size: form.file.size,
-        content: base64File
-      };
+      // Define the file data type
+      interface FileData {
+        name: string;
+        type: string;
+        size: number;
+        content: string;
+      }
+      
+      let fileData: FileData | null = null;
+      if (form.file) {
+        // Convert file to base64
+        const base64File = await convertFileToBase64(form.file);
+        fileData = {
+          name: form.file.name,
+          type: form.file.type,
+          size: form.file.size,
+          content: base64File
+        };
+      }
   
       // Create the payload
       const payload = {
@@ -159,7 +182,7 @@ function App() {
           description: form.description,
           category: form.category,
           appliesTo: form.appliesTo,
-          reprocessFile: form.reprocessFile // Include the new field in the payload
+          reprocessFile: form.reprocessFile
         },
         fileAttachment: fileData,
         urlParameters: urlParamsObject,
@@ -233,6 +256,19 @@ function App() {
             Help us improve by reporting any data extraction errors you encounter
           </p>
         </div>
+
+        {/* Deal information display - shown when deal param is present */}
+        {dealInfo && (
+          <div className="mb-6 bg-blue-100 border border-blue-200 rounded-lg p-4 flex items-start">
+            <Building className="flex-shrink-0 h-6 w-6 text-blue-600 mt-0.5 mr-2" />
+            <div>
+              <h2 className="text-lg font-semibold text-blue-800">Reporting Issue for:</h2>
+              <p className="text-blue-700 text-xl">
+                {dealInfo}
+              </p>
+            </div>
+          </div>
+        )}
 
         {success ? (
           <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
