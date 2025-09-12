@@ -191,7 +191,7 @@ function App() {
       };
   
       // PowerAutomate endpoint URL
-      const powerAutomateEndpoint = "https://prod-13.westus.logic.azure.com:443/workflows/721509f5a7e4467bac8e771ee033257a/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=X1SGNnstEHWJ3mt3JqmprKBrtiAO3VjM0V9ubV6xpe8";
+      const powerAutomateEndpoint = "https://defaultca5c5e0e72dd44208fccade7747a14.08.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/721509f5a7e4467bac8e771ee033257a/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=bukLOcO6kKHxvfizhlWy12umGC1NhwYqcGnxIxZtbbQ";
   
       // Send the data to PowerAutomate
       const response = await fetch(powerAutomateEndpoint, {
