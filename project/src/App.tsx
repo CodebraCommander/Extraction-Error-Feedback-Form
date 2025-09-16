@@ -318,15 +318,28 @@ function App() {
             <h2 className="text-xl font-semibold text-green-800 mb-2">
               Thank you for your feedback!
             </h2>
-            <p className="text-green-700">
-              We'll review your report and work on resolving the issue.
-            </p>
-            <button
-              onClick={() => setSuccess(false)}
-              className="mt-4 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
-            >
-              Submit Another Report
-            </button>
+            {form.reprocessFile ? (
+              <div className="text-green-700">
+                <p className="mb-2">
+                  We have received your feedback and your request to re-process the file.
+                </p>
+                <p className="mb-2">
+                  You should receive an email with confirmation of the case shortly.
+                </p>
+                <p className="text-sm">
+                  Please contact <a href="mailto:support@rediq.com" className="underline hover:text-green-800">support@rediq.com</a> directly if you do not receive a case confirmation message.
+                </p>
+              </div>
+            ) : (
+              <div className="text-green-700">
+                <p className="mb-2">
+                  Your feedback is helpful in improving our systems.
+                </p>
+                <p className="text-sm">
+                  Please contact <a href="mailto:support@rediq.com" className="underline hover:text-green-800">support@rediq.com</a> if you have any other questions about this deal.
+                </p>
+              </div>
+            )}
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-6 bg-white shadow-lg rounded-xl p-6">
