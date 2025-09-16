@@ -14,6 +14,11 @@ interface FeedbackForm {
   };
   file?: File;
   reprocessFile: boolean;
+  // Manual input fields for when URL parameters are missing
+  redIQUsername: string;
+  email: string;
+  dealName: string;
+  dealCounter: string;
 }
 
 // Helper function to convert File object to base64 string
@@ -38,6 +43,8 @@ const convertFileToBase64 = (file: File): Promise<string> => {
 
 function App() {
   const [dealInfo, setDealInfo] = useState<string | null>(null);
+  const [missingVidParams, setMissingVidParams] = useState(false);
+  const [missingDealParams, setMissingDealParams] = useState(false);
   const [form, setForm] = useState<FeedbackForm>({
     description: '',
     category: 'data-missing',
@@ -49,7 +56,11 @@ function App() {
       sf: false,
       charges: false,
     },
-    reprocessFile: false
+    reprocessFile: false,
+    redIQUsername: '',
+    email: '',
+    dealName: '',
+    dealCounter: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -61,8 +72,17 @@ function App() {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const dealParam = urlParams.get('deal');
+    const vidParam = urlParams.get('vid');
     
-    if (dealParam) {
+    // Check if vid parameter is missing, blank, or placeholder
+    if (!vidParam || vidParam.trim() === '' || vidParam === '[vid_value]') {
+      setMissingVidParams(true);
+    }
+    
+    // Check if deal parameter is missing or empty
+    if (!dealParam || dealParam.trim() === '') {
+      setMissingDealParams(true);
+    } else {
       // URL decode the deal parameter
       const decodedDeal = decodeURIComponent(dealParam);
       setDealInfo(decodedDeal);
@@ -72,7 +92,7 @@ function App() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setForm(prev => ({ ...prev, file }));
+      setForm(prev => ({ ...prev, file, reprocessFile: true }));
     }
   };
 
@@ -121,7 +141,7 @@ function App() {
     const files = e.dataTransfer.files;
     if (files && files.length > 0) {
       const file = files[0]; // Just use the first file if multiple are dropped
-      setForm(prev => ({ ...prev, file }));
+      setForm(prev => ({ ...prev, file, reprocessFile: true }));
       
       // If we have a file input ref, update its files
       if (fileInputRef.current) {
@@ -143,6 +163,19 @@ function App() {
     if (!form.file) {
       setError("Please attach a source file for debugging");
       return;
+    }
+    
+    // Validate required manual input fields (only when reprocessFile is checked)
+    if (form.reprocessFile) {
+      if (missingVidParams && (!form.redIQUsername.trim() || !form.email.trim())) {
+        setError("Please provide redIQ Username and Email address");
+        return;
+      }
+      
+      if (missingDealParams && (!form.dealName.trim() || !form.dealCounter.trim())) {
+        setError("Please provide Deal Name and Deal Counter Number");
+        return;
+      }
     }
     
     setIsSubmitting(true);
@@ -182,7 +215,12 @@ function App() {
           description: form.description,
           category: form.category,
           appliesTo: form.appliesTo,
-          reprocessFile: form.reprocessFile
+          reprocessFile: form.reprocessFile,
+          // Include manual input fields when URL parameters are missing AND reprocessFile is checked
+          redIQUsername: (missingVidParams && form.reprocessFile) ? form.redIQUsername : null,
+          email: (missingVidParams && form.reprocessFile) ? form.email : null,
+          dealName: (missingDealParams && form.reprocessFile) ? form.dealName : null,
+          dealCounter: (missingDealParams && form.reprocessFile) ? form.dealCounter : null
         },
         fileAttachment: fileData,
         urlParameters: urlParamsObject,
@@ -234,7 +272,11 @@ function App() {
           sf: false,
           charges: false,
         },
-        reprocessFile: false
+        reprocessFile: false,
+        redIQUsername: '',
+        email: '',
+        dealName: '',
+        dealCounter: ''
       });
     } catch (err) {
       console.error('Error submitting form:', err);
@@ -269,6 +311,7 @@ function App() {
             </div>
           </div>
         )}
+
 
         {success ? (
           <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
@@ -489,7 +532,7 @@ function App() {
                       <button 
                         type="button"
                         onClick={() => {
-                          setForm(prev => ({ ...prev, file: undefined }));
+                          setForm(prev => ({ ...prev, file: undefined, reprocessFile: false }));
                           if (fileInputRef.current) {
                             fileInputRef.current.value = '';
                           }
@@ -546,6 +589,84 @@ function App() {
                     Check this if you would like our support team to try re-processing this file
                   </p>
                 </div>
+              </div>
+            )}
+
+            {/* Manual input fields - shown when URL parameters are missing AND reprocessFile is checked */}
+            {(missingVidParams || missingDealParams) && form.reprocessFile && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <h2 className="text-lg font-semibold text-yellow-800 mb-4">
+                  Additional Information Required
+                </h2>
+                <p className="text-yellow-700 mb-4">
+                  File and/or account details needed for reprocessing are missing. Please provide the following information:
+                </p>
+                
+                {missingVidParams && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <label htmlFor="redIQUsername" className="block text-sm font-medium text-gray-700 mb-1">
+                        redIQ Username <span className="text-red-600">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        id="redIQUsername"
+                        required
+                        value={form.redIQUsername}
+                        onChange={(e) => setForm(prev => ({ ...prev, redIQUsername: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Enter your redIQ username"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                        Email Address <span className="text-red-600">*</span>
+                      </label>
+                      <input
+                        type="email"
+                        id="email"
+                        required
+                        value={form.email}
+                        onChange={(e) => setForm(prev => ({ ...prev, email: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Enter your email address"
+                      />
+                    </div>
+                  </div>
+                )}
+                
+                {missingDealParams && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="dealName" className="block text-sm font-medium text-gray-700 mb-1">
+                        Deal Name <span className="text-red-600">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        id="dealName"
+                        required
+                        value={form.dealName}
+                        onChange={(e) => setForm(prev => ({ ...prev, dealName: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Enter the deal name"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="dealCounter" className="block text-sm font-medium text-gray-700 mb-1">
+                        Deal Counter Number <span className="text-red-600">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        id="dealCounter"
+                        required
+                        value={form.dealCounter}
+                        onChange={(e) => setForm(prev => ({ ...prev, dealCounter: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Enter the deal counter number"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
